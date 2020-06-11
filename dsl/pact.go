@@ -47,6 +47,10 @@ type Pact struct {
 	// MessageInteractions contains all of the Message based interactions to be setup.
 	MessageInteractions []*Message
 
+	// GraphQLInteractions contains all of the Mock Service GraphQLInteractions
+	// to be setup.
+	GraphQLInteractions []*GraphQLInteraction
+
 	// Log levels.
 	LogLevel string
 
@@ -118,6 +122,17 @@ func (p *Pact) AddInteraction() *Interaction {
 	log.Println("[DEBUG] pact add interaction")
 	i := &Interaction{}
 	p.Interactions = append(p.Interactions, i)
+	return i
+}
+
+// AddGraphQLInteraction creates a new Pact GraphQL interaction, initialising all
+// required things. Will automatically start a Mock Service if none running.
+func (p *Pact) AddGraphQLInteraction() *GraphQLInteraction {
+	// TODO: look into this step, since this is done in 'AddInteraction' above
+	p.Setup(true)
+	log.Println("[DEBUG] pact add GraphQL interaction")
+	i := &GraphQLInteraction{}
+	p.GraphQLInteractions = append(p.GraphQLInteractions, i)
 	return i
 }
 
@@ -240,6 +255,12 @@ func (p *Pact) Verify(integrationTest func() error) error {
 	p.Setup(true)
 	log.Println("[DEBUG] pact verify")
 	var err error
+
+	// Convert Interactions for GraphQLInteractions and ApolloGraphQLInteractions
+	// then add them to the interactions list
+	for _, g := range p.GraphQLInteractions {
+		p.Interactions = append(p.Interactions, g.ReturnInteraction())
+	}
 
 	// Check if we are verifying messages or if we actually have interactions
 	if len(p.Interactions) == 0 {
